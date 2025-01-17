@@ -80,6 +80,13 @@ void SuavePathPlanner::start() {
         {
             m_drone->set_local_position_setpoint();
             sleep(5)
+            try_offboard(m_drone->set_local_position_ned(20, 0, 0))
+
+            while (true) {
+                m_drone->print_quaternion();
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            }
+            /*
             try_offboard(m_drone->set_local_position_ned(0.25, 0, 0))
             sleep(1)
             try_offboard(m_drone->set_local_position_ned(0.5, 0, 0))
@@ -111,6 +118,7 @@ void SuavePathPlanner::start() {
             try_offboard(m_drone->set_local_position_ned(0, 0, -0.25))
             sleep(1)
             try_offboard(m_drone->set_local_position_ned(0, 0, 0))
+            */
         }
         if (buffer == "pause")
         {

@@ -50,6 +50,13 @@ public:
     {
         return m_in_air.get().unwrap();
     }
+    [[nodiscard]]
+    Telemetry::Quaternion get_quaternion() const
+    {
+        return m_quaternion.get().unwrap();
+    }
+
+    void print_quaternion() const;
 
     Offboard::Result offboard_setpoint();
 
@@ -83,6 +90,7 @@ private:
     TelemetryProperty<bool> m_in_air {m_telemetry, &Telemetry::subscribe_in_air};
     TelemetryProperty<Telemetry::PositionVelocityNed> m_position_velocity_ned {m_telemetry, &Telemetry::subscribe_position_velocity_ned};
     TelemetryProperty<Telemetry::EulerAngle> m_attitude_euler {m_telemetry, &Telemetry::subscribe_attitude_euler};
+    TelemetryProperty<Telemetry::Quaternion> m_quaternion {m_telemetry, &Telemetry::subscribe_attitude_quaternion};
 
     // Misc
     double m_initial_heading_rad{ NAN };

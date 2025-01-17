@@ -1,10 +1,14 @@
 #include <csignal>
 #include <rclcpp/utilities.hpp>
+#include <chrono>
+#include <thread>
 
 #include "controllers/SuaveMaskingController.h"
 #include "controllers/SuaveVIOTestFlight.h"
+#include "controllers/SuaveMaskingPathPlanner.h"
+#include "mavutil/Drone.h"
 
-SuaveMaskingController s_controller{};
+SuavePathPlanner s_controller{};
 
 void signal_handler(int sig)
 {

@@ -8,6 +8,14 @@
 #include "../controllers/ControllerMacros.h"
 
 Drone::Drone(std::shared_ptr<System> system): m_system(std::move(system))
+
+// Drone::Drone(std::shared_ptr<System> system): 
+//     m_system(std::move(system)),
+//     m_heading(m_telemetry, &Telemetry::subscribe_heading),
+//     m_in_air(m_telemetry, &Telemetry::subscribe_in_air),
+//     m_position_velocity_ned(m_telemetry, &Telemetry::subscribe_position_velocity_ned),
+//     m_attitude_euler(m_telemetry, &Telemetry::subscribe_attitude_euler),
+//     m_quaternion(m_telemetry, &Telemetry::subscribe_attitude_quaternion) // Initialization of m_quaternion
 {
     // Timer timer{};
     // timer.start();
@@ -26,6 +34,11 @@ Drone::Drone(std::shared_ptr<System> system): m_system(std::move(system))
     // }
     m_initial_heading_rad = 0;
     suave_log << "Initial heading: " << m_initial_heading_rad << " rad\n";
+}
+void Drone::print_quaternion() const // Added method implementation
+{
+    auto quaternion = get_quaternion();
+    suave_log << "Quaternion - w: " << quaternion.w << ", x: " << quaternion.x << ", y: " << quaternion.y << ", z: " << quaternion.z << "\n";
 }
 
 Offboard::Result Drone::offboard_setpoint()
