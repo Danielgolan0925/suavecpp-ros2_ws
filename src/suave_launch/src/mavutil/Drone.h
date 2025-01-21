@@ -57,6 +57,7 @@ public:
     }
 
     void print_quaternion() const;
+    void print_ned_position() const;
 
     Offboard::Result offboard_setpoint();
 

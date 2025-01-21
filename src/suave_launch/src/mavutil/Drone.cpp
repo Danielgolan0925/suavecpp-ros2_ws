@@ -8,30 +8,7 @@
 #include "../controllers/ControllerMacros.h"
 
 Drone::Drone(std::shared_ptr<System> system): m_system(std::move(system))
-
-// Drone::Drone(std::shared_ptr<System> system): 
-//     m_system(std::move(system)),
-//     m_heading(m_telemetry, &Telemetry::subscribe_heading),
-//     m_in_air(m_telemetry, &Telemetry::subscribe_in_air),
-//     m_position_velocity_ned(m_telemetry, &Telemetry::subscribe_position_velocity_ned),
-//     m_attitude_euler(m_telemetry, &Telemetry::subscribe_attitude_euler),
-//     m_quaternion(m_telemetry, &Telemetry::subscribe_attitude_quaternion) // Initialization of m_quaternion
 {
-    // Timer timer{};
-    // timer.start();
-    // while (std::isnan(m_initial_heading_rad)) {
-    //     m_initial_heading_rad = m_telemetry.heading().heading_deg * M_PI / 180.0;
-    //     suave_log << "Waiting for initial heading...\n";
-    //     std::this_thread::sleep_for(std::chrono::seconds(1));
-    //     if (timer.has_been(3)) 
-    //     {
-    //         suave_log << "Input initial heading in degrees: ";
-    //         double initial_heading;
-    //         std::cin >> initial_heading;
-    //         m_initial_heading_rad = initial_heading * M_PI / 180.0;
-    //         break;
-    //     }
-    // }
     m_initial_heading_rad = 0;
     suave_log << "Initial heading: " << m_initial_heading_rad << " rad\n";
 }
@@ -39,6 +16,13 @@ void Drone::print_quaternion() const // Added method implementation
 {
     auto quaternion = get_quaternion();
     suave_log << "Quaternion - w: " << quaternion.w << ", x: " << quaternion.x << ", y: " << quaternion.y << ", z: " << quaternion.z << "\n";
+}
+
+void Drone::print_ned_position() const
+{
+    auto position_velocity_ned = m_position_velocity_ned.get().unwrap();
+    auto position = position_velocity_ned.position;
+    suave_log << "NED Position - North: " << position.north_m << ", East: " << position.east_m << ", Down: " << position.down_m << "\n";
 }
 
 Offboard::Result Drone::offboard_setpoint()
