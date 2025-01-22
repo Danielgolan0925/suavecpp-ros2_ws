@@ -56,8 +56,8 @@ public:
         return m_quaternion.get().unwrap();
     }
 
-    void print_quaternion() const;
-    void print_ned_position() const;
+    std::string get_quaternion_string() const;
+    std::string get_ned_position_string() const;
 
     Offboard::Result offboard_setpoint();
 

@@ -4,6 +4,7 @@
 
 #include "Drone.h"
 #include <cmath>
+#include <sstream>
 
 #include "../controllers/ControllerMacros.h"
 
@@ -12,17 +13,21 @@ Drone::Drone(std::shared_ptr<System> system): m_system(std::move(system))
     m_initial_heading_rad = 0;
     suave_log << "Initial heading: " << m_initial_heading_rad << " rad\n";
 }
-void Drone::print_quaternion() const // Added method implementation
+std::string Drone::get_quaternion_string() const
 {
     auto quaternion = get_quaternion();
-    suave_log << "Quaternion - w: " << quaternion.w << ", x: " << quaternion.x << ", y: " << quaternion.y << ", z: " << quaternion.z << "\n";
+    std::stringstream ss;
+    ss << "Quaternion- w: " << quaternion.w << ", x: " << quaternion.x << ", y: " << quaternion.y << ", z: " << quaternion.z;
+    return ss.str();
 }
 
-void Drone::print_ned_position() const
+std::string Drone::get_ned_position_string() const
 {
     auto position_velocity_ned = m_position_velocity_ned.get().unwrap();
     auto position = position_velocity_ned.position;
-    suave_log << "NED Position - North: " << position.north_m << ", East: " << position.east_m << ", Down: " << position.down_m << "\n";
+    std::stringstream ss;
+    ss << "NED Position- North: " << position.north_m << ", East: " << position.east_m << ", Down: " << position.down_m;
+    return ss.str();
 }
 
 Offboard::Result Drone::offboard_setpoint()
