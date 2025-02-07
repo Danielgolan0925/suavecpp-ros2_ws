@@ -5,7 +5,7 @@
 sudo apt install git -y
 mkdir ~/Dev
 cd ~/Dev
-git clone https://github.com/patrick4k/suavecpp-ros2_ws.git
+git clone https://github.com/Danielgolan0925/suavecpp-ros2_ws.git
 cd suavecpp-ros2_ws/setup
 source setup.bash
 ```
