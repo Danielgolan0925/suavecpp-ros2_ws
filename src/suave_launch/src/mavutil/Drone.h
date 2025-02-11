@@ -15,6 +15,10 @@
 #include <plugins/param/param.h>
 #include <plugins/tune/tune.h>
 
+#include <rclcpp/rclcpp.hpp>
+#include <geometry_msgs/msg/quaternion.hpp>
+#include <geometry_msgs/msg/vector3.hpp>
+
 #include "TelemetryProperty.h"
 #include "../util/Util.h"
 
@@ -76,6 +80,8 @@ public:
     Tune::Result play_ready_tune();
 
     void set_heading_callback(TelemetryProperty<Telemetry::Heading>::TCallback callback);
+    void init_ros_publisher();
+    void publish_telemetry();
 
 private:
     // Mavsdk
@@ -103,6 +109,10 @@ private:
         float yaw;
     };
     std::optional<LocalPosition> m_local_setpoint{};
+    
+    rclcpp::Node::SharedPtr m_ros_node;
+    rclcpp::Publisher<geometry_msgs::msg::Quaternion>::SharedPtr m_quaternion_publisher;
+    rclcpp::Publisher<geometry_msgs::msg::Vector3>::SharedPtr m_ned_position_publisher;
 };
 
 #endif //DRONE_H

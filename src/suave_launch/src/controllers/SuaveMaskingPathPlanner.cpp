@@ -78,11 +78,12 @@ void SuavePathPlanner::start() {
         }
         if (buffer == "start")
         {
+            m_drone->init_ros_publisher();
             m_drone->set_local_position_setpoint();
             sleep(1)
             // try_offboard(m_drone->set_local_position_ned(20, 0, 0))
             //Forward
-            for (int i = 0; i < 10; i += 1) {
+            for (double i = 0; i < 1; i += 0.25) {
                 try_offboard(m_drone->set_local_position_ned(i, 0, 0))
                 for (int j = 0; j < 4; ++j) { 
                     std::string quaternion_str = m_drone->get_quaternion_string();
@@ -93,8 +94,8 @@ void SuavePathPlanner::start() {
             }
 
             //Right
-            for (int i = 0; i < 10; i += 1) {
-                try_offboard(m_drone->set_local_position_ned(10, i, 0))
+            for (double i = 0; i < 1; i += .25) {
+                try_offboard(m_drone->set_local_position_ned(1, i, 0))
                 for (int j = 0; j < 4; ++j) { 
                     std::string quaternion_str = m_drone->get_quaternion_string();
                     std::string ned_position_str = m_drone->get_ned_position_string();
@@ -104,8 +105,8 @@ void SuavePathPlanner::start() {
            }    
 
             //Back
-            for (int i = 0; i < 10; i += 1) {
-                try_offboard(m_drone->set_local_position_ned(10-i, 10, 0))
+            for (double i = 0; i < 1; i += .25) {
+                try_offboard(m_drone->set_local_position_ned(1-i, 1, 0))
                 for (int j = 0; j < 4; ++j) { 
                     std::string quaternion_str = m_drone->get_quaternion_string();
                     std::string ned_position_str = m_drone->get_ned_position_string();
@@ -115,8 +116,8 @@ void SuavePathPlanner::start() {
             }
 
             //Left
-             for (int i = 0; i < 10; i += 1) {
-                     try_offboard(m_drone->set_local_position_ned(0, 10-i, 0))
+             for (double i = 0; i < 1; i += .25) {
+                     try_offboard(m_drone->set_local_position_ned(0, 1-i, 0))
                      for (int j = 0; j < 4; ++j) { 
                          std::string quaternion_str = m_drone->get_quaternion_string();
                          std::string ned_position_str = m_drone->get_ned_position_string();
@@ -125,6 +126,7 @@ void SuavePathPlanner::start() {
                     }
             }   
         }
+        
         if (buffer == "pause")
         {
             try_offboard(m_drone->offboard_hold())

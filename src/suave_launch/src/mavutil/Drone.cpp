@@ -13,6 +13,41 @@ Drone::Drone(std::shared_ptr<System> system): m_system(std::move(system))
     m_initial_heading_rad = 0;
     suave_log << "Initial heading: " << m_initial_heading_rad << " rad\n";
 }
+
+void Drone::init_ros_publisher() {
+    m_ros_node = std::make_shared<rclcpp::Node>("drone_telemetry_publisher");
+    m_quaternion_publisher = m_ros_node->create_publisher<geometry_msgs::msg::Quaternion>("drone/quaternion", 10);
+    m_ned_position_publisher = m_ros_node->create_publisher<geometry_msgs::msg::Vector3>("drone/ned_position", 10);
+    RCLCPP_INFO(m_ros_node->get_logger(), "ROS publishers initialized.");
+}
+
+void Drone::publish_telemetry() {
+    if (!m_ros_node) {
+        suave_err << "ROS node not initialized. Call init_ros_publisher() first." << std::endl;
+        return;
+    }
+
+    auto quaternion_msg = geometry_msgs::msg::Quaternion();
+    auto ned_position_msg = geometry_msgs::msg::Vector3();
+
+    auto quaternion = m_quaternion.get().unwrap();
+    quaternion_msg.w = quaternion.w;
+    quaternion_msg.x = quaternion.x;
+    quaternion_msg.y = quaternion.y;
+    quaternion_msg.z = quaternion.z;
+
+    auto position_velocity_ned = m_position_velocity_ned.get().unwrap();
+    auto position = position_velocity_ned.position;
+    ned_position_msg.x = position.north_m;
+    ned_position_msg.y = position.east_m;
+    ned_position_msg.z = position.down_m;
+
+    m_quaternion_publisher->publish(quaternion_msg);
+    m_ned_position_publisher->publish(ned_position_msg);
+    RCLCPP_INFO(m_ros_node->get_logger(), "Published Quaternion: [w: %f, x: %f, y: %f, z: %f]", quaternion_msg.w, quaternion_msg.x, quaternion_msg.y, quaternion_msg.z);
+    RCLCPP_INFO(m_ros_node->get_logger(), "Published NED Position: [north: %f, east: %f, down: %f]", ned_position_msg.x, ned_position_msg.y, ned_position_msg.z);
+}
+
 std::string Drone::get_quaternion_string() const
 {
     auto quaternion = get_quaternion();
