@@ -69,6 +69,8 @@ class MaskingPIDPublisher(Node):
     def run(self, camera_index=0):
         # Initialize video stream
         cap = cv2.VideoCapture(0)
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH, self.frame_width)
+        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.frame_height)
 
         while True:
             ret, frame = cap.read()
@@ -182,7 +184,7 @@ class MaskingPIDPublisher(Node):
 
 
             # Display the resulting frame and mask
-            #cv2.imshow('Live Stream with Bounding Box and Center Point', frame_with_contours)
+            #cv2.imshow('Live Stream with Bounding Box and Center Point', frame)
             #cv2.imshow('Mask', mask)
              # Display the frame and the combined mask
             #cv2.imshow("Bounding Box Tracking", frame)
