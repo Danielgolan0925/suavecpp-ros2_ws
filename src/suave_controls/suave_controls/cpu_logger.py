@@ -55,14 +55,19 @@ class CpuMonitorNode(Node):
     def destroy_node(self):
         self.is_running = False  # Stop the CPU monitoring loop
         self.monitor_thread.join()  # Ensure thread finishes cleanly
+        self.export_callback(None, None)  # Export data before shutting down
         super().destroy_node()
 
 def main(args=None):
     rclpy.init(args=args)
     node = CpuMonitorNode()
-    rclpy.spin(node)
-    node.destroy_node()
-    rclpy.shutdown()
+    try: 
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        node.get_logger().info('KeyboardInterrupt received, shutting down...')
+    finally: 
+        node.destroy_node()
+        rclpy.shutdown()
 
 if __name__ == '__main__':
     main()
