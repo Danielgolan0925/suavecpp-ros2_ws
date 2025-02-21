@@ -26,7 +26,7 @@ void Drone::publish_telemetry() {
         suave_err << "ROS node not initialized. Call init_ros_publisher() first." << std::endl;
         return;
     }
-
+    // publishes quaternion and ned position
     auto quaternion_msg = geometry_msgs::msg::Quaternion();
     auto ned_position_msg = geometry_msgs::msg::Vector3();
 

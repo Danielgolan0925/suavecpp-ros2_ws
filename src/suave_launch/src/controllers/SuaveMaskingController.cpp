@@ -30,6 +30,7 @@ void SuaveMaskingController::start() {
     );
     m_task.push_back(rtabmap_task);
 
+    // The block below to enables CPU logging
     auto cpu_logger = std::make_shared<SystemTask>(
         std::vector<std::string>{
             "source /opt/ros/humble/setup.bash",
