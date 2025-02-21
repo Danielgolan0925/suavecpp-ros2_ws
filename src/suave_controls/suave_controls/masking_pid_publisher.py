@@ -8,6 +8,7 @@ import numpy as np
 from simple_pid import PID  # type: ignore
 import csv
 import time
+import subprocess
 
 pink_lower = np.array([140, 100, 100])
 pink_upper = np.array([170, 255, 255])
@@ -31,18 +32,18 @@ ZGAINS = [7.5, 0, 0]
 YAWGAINS = [6, 0, 0]
 """
 
-#         P, I, D
+# P, I, D
 XGAINS = [1, 1.25, 3]
 YGAINS = [1, 0, 0]
 ZGAINS = [7.5, 0, 0]
 YAWGAINS = [6, 0, 0]
+
 
 class MaskingPIDPublisher(Node):
 
     def __init__(self):
         super().__init__('masking_pid_publisher')
         self.publisher_ = self.create_publisher(Quaternion, 'masking_pid_publisher', 10)
-        
         self.bounding_box_data = []
 
         self.frame_width = 640  # Adjust to your camera frame width
@@ -64,13 +65,62 @@ class MaskingPIDPublisher(Node):
         self.pid_yaw.output_limits = (-100, 100)
 
         self._srv_export = self.create_service(Empty, 'exportXYZ', self.service_export)
+        self.serials = {}
+        self.FILTER = "ID_SERIAL="
 
+    def match_camID_to_serial(self, target_serial):
+        """Find the camera by its serial number and return the corresponding camera ID."""
+        self.serials = {}  # Initialize the serials dictionary
+
+        # Loop through potential camera IDs (adjust range if needed)
+        for cam_id in range(0, 9):
+            serial = self.get_cam_serial(cam_id)  # Fetch the serial for each cam_id
+            if len(serial) > 6:  # Check if the serial number is valid
+                self.serials[cam_id] = serial  # Store the serial number in the serials dictionary
+                # print(f"Serials: {self.serials}") UNCOMMENT FOR SERIAL RECOGNITION
+
+        # Now check if target_serial matches any serial in self.serials
+        for cam_id, serial in self.serials.items():
+            # print(f"Serial attempt to match with {serial}") UNCOMMENT FOR ERROR
+            if serial == target_serial:
+                print(f"This is the correct camera ID: {cam_id}")
+                return cam_id  # Return the matching camera ID
+
+        print("MATCHID Just Returned None which means the serials.items() does not contain target_serial")
+        return None  # If no match is found
+    #Gets all serial numbers for every camera device connected
+    def get_serial_nums(self):
+        self.serials = {}  # Make sure the serials dictionary is properly initialized
+        for cam_id in range(0, 9):  # Adjust the range if necessary
+            self.serial = self.get_cam_serial(cam_id)  # Fetch the serial for each cam_id
+            if len(self.serial) > 6:  # Ensure a valid serial number
+                self.serials[cam_id] = self.serial  # Store the serial number in self.serials
+        print(f"Serials: {self.serials}")
+        return self.serials
+
+    def get_cam_serial(self, cam_id):
+        """Fetch the serial number for each camera device using udevadm."""
+        p = subprocess.Popen(
+            f'udevadm info --name=/dev/video{cam_id} | grep {self.FILTER} | cut -d "=" -f 2',
+            stdout=subprocess.PIPE, shell=True)
+        output, err = p.communicate()
+        p.status = p.wait()
+        response = output.decode('utf-8')
+        # print(f"Serial: {response}")
+        return response.replace('\n', '')
 
     def run(self, camera_index=0):
-        # Initialize video stream
-        cap = cv2.VideoCapture(0)
-        cap.set(cv2.CAP_PROP_FRAME_WIDTH, self.frame_width)
-        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.frame_height)
+        # self.match_camID_to_serial("YJX_USB_Camera_20181208")
+        camera_id = self.match_camID_to_serial("YJX_USB_Camera_20181208")
+        if camera_id is not None:
+            cap = cv2.VideoCapture(camera_id)  # Use the camera ID returned from the function
+            if not cap.isOpened():
+                print(f"Failed to open camera with ID {camera_id}")
+            else:
+                print(f"Successfully opened camera with ID {camera_id}")
+        else:
+            print(f"Camera with serial YJX_USB_Camera_20181208 not found.")
+
 
         while True:
             ret, frame = cap.read()
