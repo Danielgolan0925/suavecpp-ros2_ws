@@ -44,8 +44,8 @@ void Drone::publish_telemetry() {
 
     m_quaternion_publisher->publish(quaternion_msg);
     m_ned_position_publisher->publish(ned_position_msg);
-    RCLCPP_INFO(m_ros_node->get_logger(), "Published Quaternion: [w: %f, x: %f, y: %f, z: %f]", quaternion_msg.w, quaternion_msg.x, quaternion_msg.y, quaternion_msg.z);
-    RCLCPP_INFO(m_ros_node->get_logger(), "Published NED Position: [north: %f, east: %f, down: %f]", ned_position_msg.x, ned_position_msg.y, ned_position_msg.z);
+    //RCLCPP_INFO(m_ros_node->get_logger(), "Published Quaternion: [w: %f, x: %f, y: %f, z: %f]", quaternion_msg.w, quaternion_msg.x, quaternion_msg.y, quaternion_msg.z);
+    //RCLCPP_INFO(m_ros_node->get_logger(), "Published NED Position: [north: %f, east: %f, down: %f]", ned_position_msg.x, ned_position_msg.y, ned_position_msg.z);
 }
 
 std::string Drone::get_quaternion_string() const
