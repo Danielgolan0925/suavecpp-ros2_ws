@@ -138,7 +138,9 @@ void SuaveMaskingController::start() {
         }
         if (buffer == "export")
         {
-            export_task.start_in_thread();
+            // export_task.start_in_thread();
+            suave_log << "Exporting CPU Data" << std::endl;
+            system("ros2 service call /exportCPU std_srvs/srv/Empty");
         }
 
         suave_log << std::endl;

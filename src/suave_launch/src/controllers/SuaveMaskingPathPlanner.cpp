@@ -9,6 +9,28 @@
 #include "../vio/CloudExporter.h"
 #include "../vio/VIOBridge.h"
 #include "ControllerMacros.h"
+#include <atomic>
+#include <thread>
+
+std::atomic<bool> m_publish_telemetry{false};
+std::thread m_telemetry_thread;
+
+void SuavePathPlanner::start_telemetry_publishing() {
+    m_publish_telemetry = true;
+    m_telemetry_thread = std::thread([this]() {
+        while (m_publish_telemetry) {
+            m_drone->publish_telemetry();
+            std::this_thread::sleep_for(std::chrono::milliseconds(250));
+        }
+    });
+}
+
+void SuavePathPlanner::stop_telemetry_publishing() {
+    m_publish_telemetry = false;
+    if (m_telemetry_thread.joinable()) {
+        m_telemetry_thread.join();
+    }
+}
 
 void SuavePathPlanner::start() {
     // Create realsense and rtabmap nodes
@@ -61,11 +83,15 @@ void SuavePathPlanner::start() {
     suave_log << "Ready for flight?" << std::endl;
     await_confirmation;
 
-    // Start offboard and arm
-    try_action(m_drone->action().arm())
-    try_offboard(m_drone->offboard_setpoint())
-    try_offboard(m_drone->offboard().start())
+    // Initialize ROS publisher
+    m_drone->init_ros_publisher();
+    m_drone->publish_telemetry();
 
+    // Start offboard and arm
+    try_action(m_drone->action().arm());
+    try_offboard(m_drone->offboard_setpoint());
+    try_offboard(m_drone->offboard().start());
+    
     while (true) 
     {
         suave_log << "Input action: ";
@@ -74,17 +100,18 @@ void SuavePathPlanner::start() {
 
         if (buffer == "takeoff")
         {
-            try_offboard(m_drone->set_relative_position_ned(0, 0, -1.75))
+            try_offboard(m_drone->set_relative_position_ned(0, 0, -1.75));
+            start_telemetry_publishing();
         }
         if (buffer == "start")
         {
-            m_drone->init_ros_publisher();
             m_drone->set_local_position_setpoint();
-            sleep(1)
+            sleep(1);
             // try_offboard(m_drone->set_local_position_ned(20, 0, 0))
             //Forward
-            for (double i = 0; i < 1; i += 0.25) {
-                try_offboard(m_drone->set_local_position_ned(i, 0, 0))
+            double d = 10; // distance
+            for (double i = 0; i < d; i += 0.25) {
+                try_offboard(m_drone->set_local_position_ned(i, 0, 0));
                 for (int j = 0; j < 4; ++j) { 
                     std::string quaternion_str = m_drone->get_quaternion_string();
                     std::string ned_position_str = m_drone->get_ned_position_string();
@@ -94,19 +121,19 @@ void SuavePathPlanner::start() {
             }
 
             //Right
-            for (double i = 0; i < 1; i += .25) {
-                try_offboard(m_drone->set_local_position_ned(1, i, 0))
+            for (double i = 0; i < d; i += .25) {
+                try_offboard(m_drone->set_local_position_ned(d, i, 0));
                 for (int j = 0; j < 4; ++j) { 
                     std::string quaternion_str = m_drone->get_quaternion_string();
                     std::string ned_position_str = m_drone->get_ned_position_string();
                     suave_log << quaternion_str << " | " << ned_position_str << "\n";
                     std::this_thread::sleep_for(std::chrono::milliseconds(250)); 
-                      }
-           }    
+                }
+            }    
 
             //Back
-            for (double i = 0; i < 1; i += .25) {
-                try_offboard(m_drone->set_local_position_ned(1-i, 1, 0))
+            for (double i = 0; i < d; i += .25) {
+                try_offboard(m_drone->set_local_position_ned(d-i, d, 0));
                 for (int j = 0; j < 4; ++j) { 
                     std::string quaternion_str = m_drone->get_quaternion_string();
                     std::string ned_position_str = m_drone->get_ned_position_string();
@@ -116,23 +143,25 @@ void SuavePathPlanner::start() {
             }
 
             //Left
-             for (double i = 0; i < 1; i += .25) {
-                     try_offboard(m_drone->set_local_position_ned(0, 1-i, 0))
-                     for (int j = 0; j < 4; ++j) { 
-                         std::string quaternion_str = m_drone->get_quaternion_string();
-                         std::string ned_position_str = m_drone->get_ned_position_string();
-                         suave_log << quaternion_str << " | " << ned_position_str << "\n";
-                        std::this_thread::sleep_for(std::chrono::milliseconds(250)); 
-                    }
+            for (double i = 0; i < d; i += .25) {
+                try_offboard(m_drone->set_local_position_ned(0, d-i, 0));
+                for (int j = 0; j < 4; ++j) { 
+                    std::string quaternion_str = m_drone->get_quaternion_string();
+                    std::string ned_position_str = m_drone->get_ned_position_string();
+                    suave_log << quaternion_str << " | " << ned_position_str << "\n";
+                    std::this_thread::sleep_for(std::chrono::milliseconds(250)); 
+                }
             }   
         }
         
         if (buffer == "pause")
         {
-            try_offboard(m_drone->offboard_hold())
+            try_offboard(m_drone->offboard_hold());
+            stop_telemetry_publishing();
         }
         if (buffer == "exit")
         {
+            stop_telemetry_publishing();
             break;
         }
 

@@ -28,6 +28,9 @@ public:
     void shutdown() override;
 
 private:
+    void start_telemetry_publishing();
+    void stop_telemetry_publishing();
+    
     bool m_end_controller{ false };
     std::unique_ptr<Drone> m_drone{ nullptr };
     std::vector<std::shared_ptr<ITask>> m_task{};
