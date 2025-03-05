@@ -11,9 +11,31 @@
 #include "ControllerMacros.h"
 #include <atomic>
 #include <thread>
+#include <rclcpp/rclcpp.hpp>
+#include <std_msgs/msg/float64_multi_array.hpp>
 
 std::atomic<bool> m_publish_telemetry{false};
 std::thread m_telemetry_thread;
+
+SuavePathPlanner::SuavePathPlanner() :
+    ISuaveController()
+{
+    try {
+        if (const auto& system = connectToPX4(m_mavsdk)) {
+            m_drone = std::make_unique<Drone>(system);
+        }
+    }
+    catch (...) { /*ignore*/ }
+
+    // Initialize ROS node
+    node = std::make_shared<rclcpp::Node>("suave_path_planner");
+
+    // Initialize subscriber
+    m_controller_output_subscriber = node->create_subscription<std_msgs::msg::Float64MultiArray>(
+        "/drone/controller_output", 10,
+        std::bind(&SuavePathPlanner::controller_output_callback, this, std::placeholders::_1)
+    );
+}
 
 void SuavePathPlanner::start_telemetry_publishing() {
     m_publish_telemetry = true;
@@ -29,6 +51,24 @@ void SuavePathPlanner::stop_telemetry_publishing() {
     m_publish_telemetry = false;
     if (m_telemetry_thread.joinable()) {
         m_telemetry_thread.join();
+    }
+}
+
+void SuavePathPlanner::controller_output_callback(const std_msgs::msg::Float64MultiArray::SharedPtr msg) {
+    if (msg->data.size() == 8) {
+        m_controller_output_values = msg->data;
+
+        double w0 = m_controller_output_values[0];
+        double wx = m_controller_output_values[1];
+        double wy = m_controller_output_values[2];
+        double wz = m_controller_output_values[3];
+        double v0 = m_controller_output_values[4];
+        double vx = m_controller_output_values[5];
+        double vy = m_controller_output_values[6];
+        double vz = m_controller_output_values[7];
+
+    } else {
+        suave_log << "Unexpected controller output size: " << msg->data.size() << std::endl;
     }
 }
 
@@ -92,9 +132,11 @@ void SuavePathPlanner::start() {
     try_offboard(m_drone->offboard_setpoint());
     try_offboard(m_drone->offboard().start());
 
-    // Start Dual Quaternion controller
-    
-    
+    // Create a MultiThreadedExecutor to spin the node
+    auto executor = std::make_shared<rclcpp::executors::MultiThreadedExecutor>();
+    executor->add_node(node);
+    std::thread([executor]() { executor->spin(); }).detach();
+
     while (true) 
     {
         suave_log << "Input action: ";
