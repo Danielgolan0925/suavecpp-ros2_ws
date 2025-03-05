@@ -91,6 +91,9 @@ void SuavePathPlanner::start() {
     try_action(m_drone->action().arm());
     try_offboard(m_drone->offboard_setpoint());
     try_offboard(m_drone->offboard().start());
+
+    // Start Dual Quaternion controller
+    
     
     while (true) 
     {
@@ -107,51 +110,10 @@ void SuavePathPlanner::start() {
         {
             m_drone->set_local_position_setpoint();
             sleep(1);
+            std::system("python3 /home/suave/Dev/suavecpp-ros2_ws/src/suave_controls/suave_controls/dq_controller.py &");
             // try_offboard(m_drone->set_local_position_ned(20, 0, 0))
             //Forward
-            double d = 10; // distance
-            for (double i = 0; i < d; i += 0.25) {
-                try_offboard(m_drone->set_local_position_ned(i, 0, 0));
-                for (int j = 0; j < 4; ++j) { 
-                    std::string quaternion_str = m_drone->get_quaternion_string();
-                    std::string ned_position_str = m_drone->get_ned_position_string();
-                    suave_log << quaternion_str << " | " << ned_position_str << "\n";
-                    std::this_thread::sleep_for(std::chrono::milliseconds(250)); 
-                }
-            }
 
-            //Right
-            for (double i = 0; i < d; i += .25) {
-                try_offboard(m_drone->set_local_position_ned(d, i, 0));
-                for (int j = 0; j < 4; ++j) { 
-                    std::string quaternion_str = m_drone->get_quaternion_string();
-                    std::string ned_position_str = m_drone->get_ned_position_string();
-                    suave_log << quaternion_str << " | " << ned_position_str << "\n";
-                    std::this_thread::sleep_for(std::chrono::milliseconds(250)); 
-                }
-            }    
-
-            //Back
-            for (double i = 0; i < d; i += .25) {
-                try_offboard(m_drone->set_local_position_ned(d-i, d, 0));
-                for (int j = 0; j < 4; ++j) { 
-                    std::string quaternion_str = m_drone->get_quaternion_string();
-                    std::string ned_position_str = m_drone->get_ned_position_string();
-                    suave_log << quaternion_str << " | " << ned_position_str << "\n";
-                    std::this_thread::sleep_for(std::chrono::milliseconds(250)); 
-                }
-            }
-
-            //Left
-            for (double i = 0; i < d; i += .25) {
-                try_offboard(m_drone->set_local_position_ned(0, d-i, 0));
-                for (int j = 0; j < 4; ++j) { 
-                    std::string quaternion_str = m_drone->get_quaternion_string();
-                    std::string ned_position_str = m_drone->get_ned_position_string();
-                    suave_log << quaternion_str << " | " << ned_position_str << "\n";
-                    std::this_thread::sleep_for(std::chrono::milliseconds(250)); 
-                }
-            }   
         }
         
         if (buffer == "pause")
