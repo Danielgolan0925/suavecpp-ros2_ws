@@ -58,15 +58,34 @@ void SuavePathPlanner::controller_output_callback(const std_msgs::msg::Float64Mu
     if (msg->data.size() == 8) {
         m_controller_output_values = msg->data;
 
-        double w0 = m_controller_output_values[0];
-        double wx = m_controller_output_values[1];
-        double wy = m_controller_output_values[2];
-        double wz = m_controller_output_values[3];
-        double v0 = m_controller_output_values[4];
-        double vx = m_controller_output_values[5];
-        double vy = m_controller_output_values[6];
-        double vz = m_controller_output_values[7];
+        //double w0 = m_controller_output_values[0];
+        //double wx = m_controller_output_values[1];
+        //double wy = m_controller_output_values[2];
+        //double wz = m_controller_output_values[3];
+        //double v0 = m_controller_output_values[4];
+        //double vx = m_controller_output_values[5];
+        //double vy = m_controller_output_values[6];
+        //double vz = m_controller_output_values[7];
 
+        float wz = m_controller_output_values[3];
+        float vx = m_controller_output_values[5];
+        float vy = m_controller_output_values[6];
+        float vz = m_controller_output_values[7];
+
+        //constexpr float MAX_VELOCITY = 0.5;
+        //constexpr float MAX_YAWSPEED = 20; // deg/s
+
+        Velocity velocity {
+            vx, // forward m/s
+            vy, //right m/s
+            vz, //down m/s
+            -wz // yawspeed deg/s
+        };
+
+        const auto& result = m_drone->offboard().set_velocity_body(velocity);
+        if (result != Offboard::Result::Success) {
+            suave_log << "Error setting velocity: " << result << "\nF: " << velocity.forward_m_s << "\nR: " << velocity.right_m_s << "\nD:" << velocity.down_m_s << std::endl;
+        }
     } else {
         suave_log << "Unexpected controller output size: " << msg->data.size() << std::endl;
     }

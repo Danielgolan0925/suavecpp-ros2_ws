@@ -24,6 +24,8 @@ private:
     void stop_telemetry_publishing();
     void controller_output_callback(const std_msgs::msg::Float64MultiArray::SharedPtr msg);
     
+    using Velocity = Offboard::VelocityBodyYawspeed;
+
     bool m_end_controller{ false };
     std::unique_ptr<Drone> m_drone{ nullptr };
     std::vector<std::shared_ptr<ITask>> m_task{};

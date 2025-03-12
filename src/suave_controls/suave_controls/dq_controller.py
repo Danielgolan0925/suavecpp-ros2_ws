@@ -20,11 +20,11 @@ class DualQuaternionController(Node):
         
         self.ned_position = None
         self.quaternion = None
-        self.dq_desired_df = self.load_desired_state("dqData.csv")
+        self.dq_desired_df = self.load_desired_state("dqData1.csv")
         self.current_index = 0  # Index for desired state tracking
 
     def load_desired_state(self, file_path):
-        file_path = "/home/suave/Dev/suavecpp-ros2_ws/src/suave_controls/suave_controls/dqData.csv"
+        file_path = "/home/suave/Dev/suavecpp-ros2_ws/src/suave_controls/suave_controls/dqData1.csv"
         data = pd.read_csv(file_path)
         return encode_dual_quaternions(data)
 
@@ -36,6 +36,7 @@ class DualQuaternionController(Node):
         self.quaternion = msg
         self.process_data()
 
+#################### Construction of Current state as a Dual Quaternion ####################
     def process_data(self):
         if self.ned_position and self.quaternion:
             df = pd.DataFrame({
@@ -63,18 +64,36 @@ class DualQuaternionController(Node):
             controller_output = self.controller(dq_current, dq_desired)
             self.publish_data(dq_current_df.iloc[0], controller_output)
             
-            self.current_index = (self.current_index + 1) % len(self.dq_desired_df)  # Loop through desired states
+            # Check if the current state is close enough to the desired state
+            if self.is_state_satisfied(dq_current, dq_desired):
+                self.get_logger().info(f'State satisfied for index {self.current_index}. Moving to the next desired state.')
+                self.current_index = (self.current_index + 1) % len(self.dq_desired_df)  # Move to the next desired state
+            else:
+                self.get_logger().info(f'State not satisfied for index {self.current_index}. Retrying...')
+
+    def is_state_satisfied(self, dq_current, dq_desired, threshold=0.1):
+        # Calculate the difference between the current and desired states
+        dq_error = dq_current * dq_desired.inverse()
+        dq_log = log_dual_quaternion(dq_error)
+        
+        # Check if the error is within the threshold
+        return np.linalg.norm([dq_log.q_r.x, dq_log.q_r.y, dq_log.q_r.z]) < threshold and \
+               np.linalg.norm([dq_log.q_d.x, dq_log.q_d.y, dq_log.q_d.z]) < threshold
+
+#################### Dual Quaternion Controller ####################
 
     def controller(self, dq_current, dq_desired):
         lambda_val = 1
         dq_error = dq_current * dq_desired.inverse()
         dq_log = log_dual_quaternion(dq_error)
         controller_output = -lambda_val * dq_log
-        # Return both the real and dual parts of the quaternion
+
         return [
             controller_output.q_r.w, controller_output.q_r.x, controller_output.q_r.y, controller_output.q_r.z,
             controller_output.q_d.w, controller_output.q_d.x, controller_output.q_d.y, controller_output.q_d.z
         ]
+
+#################### ROS2 Message Formation  ####################
 
     def publish_data(self, row, controller_output):
         real_msg = Quaternion()
@@ -100,6 +119,8 @@ class DualQuaternionController(Node):
         # Log the real quaternion message
         #self.get_logger().info(f'Published Real Quaternion: [w: {real_msg.w}, x: {real_msg.x}, y: {real_msg.y}, z: {real_msg.z}]')
 
+#################### Construction of DQ Desired ####################
+
 def encode_dual_quaternions(df):
     data = {'real_w': [], 'real_x': [], 'real_y': [], 'real_z': [], 'dual_w': [], 'dual_x': [], 'dual_y': [], 'dual_z': []}
     for _, row in df.iterrows():
@@ -117,6 +138,7 @@ def encode_dual_quaternions(df):
         data['dual_z'].append(dq.q_d.z)
     return pd.DataFrame(data)
 
+#################### Dual Quaternion Log Operation Definition ####################
 def log_dual_quaternion(dq):
     qr, qd = dq.q_r, dq.q_d
     norm_vr = np.linalg.norm([qr.x, qr.y, qr.z])
@@ -140,3 +162,13 @@ def main(args=None):
 
 if __name__ == '__main__':
     main()
+    
+    ########## Notes for later ##########
+        # Return both the real and dual parts of the quaternion
+        # Turn up the lambda value to increase the rate of convergence
+        # Could be bad quaternions
+        # Smaller Lambda
+        # Rerecord Data with time tracking
+        # Normalize the quaternions with pyquaternion
+        # Takeoff much higher and reinitialize the "home frame"
+        # Make separate gazebo branch for testing
