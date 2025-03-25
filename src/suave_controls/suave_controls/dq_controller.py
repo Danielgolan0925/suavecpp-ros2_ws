@@ -68,13 +68,7 @@ class DualQuaternionController(Node):
         lambda_val = .5
         dq_error = dq_current * dq_desired.inverse()
         dq_log = log_dual_quaternion(dq_error)
-        controller_output = -lambda_val * dq_log
-        
-        # Calculate norms
-        dq_error_norm = np.linalg.norm([dq_error.q_r.x, dq_error.q_r.y, dq_error.q_r.z])
-        dq_log_norm = np.linalg.norm([dq_log.q_r.x, dq_log.q_r.y, dq_log.q_r.z])
-        
-        print(f"Norm of dq_error: {dq_error_norm:.4f}, Norm of dq_log: {dq_log_norm:.4f}")   
+        controller_output = -lambda_val * dq_log  
         
         return [
             controller_output.q_r.w, controller_output.q_r.x, controller_output.q_r.y, controller_output.q_r.z,
@@ -163,3 +157,4 @@ if __name__ == '__main__':
         # Smaller Lambda
         # Build in speed controller
         # Build in a way to say you have reached where you want to go
+        # Make lambda a linear function (time?)
