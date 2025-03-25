@@ -17,16 +17,11 @@ class DualQuaternionController(Node):
         self.publisher_controller_output = self.create_publisher(Float64MultiArray, '/drone/controller_output', 10)
         self.publisher_real = self.create_publisher(Quaternion, '/drone/real_quaternion', 10)
         self.publisher_dual = self.create_publisher(Quaternion, '/drone/dual_quaternion', 10)
-        
+        self.publisher_velocity = self.create_publisher(Vector3, '/drone/velocity', 10)
         self.ned_position = None
         self.quaternion = None
-        self.dq_desired_df = self.load_desired_state("dqData1.csv")
+        #self.dq_desired_df = self.load_desired_state("dqData1.csv")
         self.current_index = 0  # Index for desired state tracking
-
-    def load_desired_state(self, file_path):
-        file_path = "/home/suave/Dev/suavecpp-ros2_ws/src/suave_controls/suave_controls/dqData1.csv"
-        data = pd.read_csv(file_path)
-        return encode_dual_quaternions(data)
 
     def ned_callback(self, msg):
         self.ned_position = msg
@@ -39,6 +34,7 @@ class DualQuaternionController(Node):
 #################### Construction of Current state as a Dual Quaternion ####################
     def process_data(self):
         if self.ned_position and self.quaternion:
+            self.quaternion = PyQuaternion(self.quaternion.w, self.quaternion.x, self.quaternion.y, self.quaternion.z).unit
             df = pd.DataFrame({
                 'North': [self.ned_position.x],
                 'East': [self.ned_position.y],
@@ -51,54 +47,46 @@ class DualQuaternionController(Node):
             dq_current_df = encode_dual_quaternions(df)
             dq_current = DualQuaternion(
                 PyQuaternion(dq_current_df.iloc[0]['real_w'], dq_current_df.iloc[0]['real_x'], 
-                          dq_current_df.iloc[0]['real_y'], dq_current_df.iloc[0]['real_z']),
+                             dq_current_df.iloc[0]['real_y'], dq_current_df.iloc[0]['real_z']),
                 PyQuaternion(dq_current_df.iloc[0]['dual_w'], dq_current_df.iloc[0]['dual_x'], 
-                          dq_current_df.iloc[0]['dual_y'], dq_current_df.iloc[0]['dual_z']))
+                             dq_current_df.iloc[0]['dual_y'], dq_current_df.iloc[0]['dual_z']))
+            
+            # Desired state
+            x_des = 0.5 * 20
+            y_des = 0.5 * 5   
+            z_des = 0.5 * -20
             
             dq_desired = DualQuaternion(
-                PyQuaternion(self.dq_desired_df.iloc[self.current_index]['real_w'], self.dq_desired_df.iloc[self.current_index]['real_x'],
-                          self.dq_desired_df.iloc[self.current_index]['real_y'], self.dq_desired_df.iloc[self.current_index]['real_z']),
-                PyQuaternion(self.dq_desired_df.iloc[self.current_index]['dual_w'], self.dq_desired_df.iloc[self.current_index]['dual_x'],
-                          self.dq_desired_df.iloc[self.current_index]['dual_y'], self.dq_desired_df.iloc[self.current_index]['dual_z']))
+                PyQuaternion(1, 0, 0 , 0),
+                PyQuaternion(0, x_des, y_des, z_des))
             
-            controller_output = self.controller(dq_current, dq_desired)
-            self.publish_data(dq_current_df.iloc[0], controller_output)
-            
-            # Check if the current state is close enough to the desired state
-            if self.is_state_satisfied(dq_current, dq_desired):
-                self.get_logger().info(f'State satisfied for index {self.current_index}. Moving to the next desired state.')
-                self.current_index = (self.current_index + 1) % len(self.dq_desired_df)  # Move to the next desired state
-            else:
-                self.get_logger().info(f'State not satisfied for index {self.current_index}. Retrying...')
-
-    def is_state_satisfied(self, dq_current, dq_desired, threshold=0.1):
-        # Calculate the difference between the current and desired states
-        dq_error = dq_current * dq_desired.inverse()
-        dq_log = log_dual_quaternion(dq_error)
-        
-        # Check if the error is within the threshold
-        return np.linalg.norm([dq_log.q_r.x, dq_log.q_r.y, dq_log.q_r.z]) < threshold and \
-               np.linalg.norm([dq_log.q_d.x, dq_log.q_d.y, dq_log.q_d.z]) < threshold
+            self.publish_data(dq_current_df.iloc[0], dq_current, dq_desired)
 
 #################### Dual Quaternion Controller ####################
 
     def controller(self, dq_current, dq_desired):
-        lambda_val = 1
+        lambda_val = .5
         dq_error = dq_current * dq_desired.inverse()
         dq_log = log_dual_quaternion(dq_error)
         controller_output = -lambda_val * dq_log
-
+        
+        # Calculate norms
+        dq_error_norm = np.linalg.norm([dq_error.q_r.x, dq_error.q_r.y, dq_error.q_r.z])
+        dq_log_norm = np.linalg.norm([dq_log.q_r.x, dq_log.q_r.y, dq_log.q_r.z])
+        
+        print(f"Norm of dq_error: {dq_error_norm:.4f}, Norm of dq_log: {dq_log_norm:.4f}")   
+        
         return [
             controller_output.q_r.w, controller_output.q_r.x, controller_output.q_r.y, controller_output.q_r.z,
             controller_output.q_d.w, controller_output.q_d.x, controller_output.q_d.y, controller_output.q_d.z
         ]
-
 #################### ROS2 Message Formation  ####################
 
-    def publish_data(self, row, controller_output):
+    def publish_data(self, row, dq_current, dq_desired):
         real_msg = Quaternion()
         dual_msg = Quaternion()
         controller_output_msg = Float64MultiArray()
+        velocity_msg = Vector3()
         
         real_msg.w = row['real_w']
         real_msg.x = row['real_x']
@@ -110,11 +98,15 @@ class DualQuaternionController(Node):
         dual_msg.y = row['dual_y']
         dual_msg.z = row['dual_z']
         
+        controller_output = self.controller(dq_current, dq_desired)
         controller_output_msg.data = controller_output
+        
+        velocity_msg.x, velocity_msg.y, velocity_msg.z = controller_output[-3:]
         
         self.publisher_real.publish(real_msg)
         self.publisher_dual.publish(dual_msg)
         self.publisher_controller_output.publish(controller_output_msg)
+        self.publisher_velocity.publish(velocity_msg)
 
         # Log the real quaternion message
         #self.get_logger().info(f'Published Real Quaternion: [w: {real_msg.w}, x: {real_msg.x}, y: {real_msg.y}, z: {real_msg.z}]')
@@ -122,9 +114,11 @@ class DualQuaternionController(Node):
 #################### Construction of DQ Desired ####################
 
 def encode_dual_quaternions(df):
-    data = {'real_w': [], 'real_x': [], 'real_y': [], 'real_z': [], 'dual_w': [], 'dual_x': [], 'dual_y': [], 'dual_z': []}
+    data = {'real_w': [], 'real_x': [], 'real_y': [], 'real_z': [],
+            'dual_w': [], 'dual_x': [], 'dual_y': [], 'dual_z': []}
+    
     for _, row in df.iterrows():
-        q_r = PyQuaternion(row['w'], row['x'], row['y'], row['z'])
+        q_r = PyQuaternion(row['w'], row['x'], row['y'], row['z']).unit
         q_t = PyQuaternion(0, row['North'], row['East'], row['Down'])
         dq = DualQuaternion(q_r, 0.5 * q_t * q_r)
         
@@ -164,11 +158,8 @@ if __name__ == '__main__':
     main()
     
     ########## Notes for later ##########
-        # Return both the real and dual parts of the quaternion
         # Turn up the lambda value to increase the rate of convergence
         # Could be bad quaternions
         # Smaller Lambda
-        # Rerecord Data with time tracking
-        # Normalize the quaternions with pyquaternion
-        # Takeoff much higher and reinitialize the "home frame"
-        # Make separate gazebo branch for testing
+        # Build in speed controller
+        # Build in a way to say you have reached where you want to go

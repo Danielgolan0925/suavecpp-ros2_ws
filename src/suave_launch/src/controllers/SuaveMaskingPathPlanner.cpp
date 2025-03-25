@@ -76,8 +76,8 @@ void SuavePathPlanner::controller_output_callback(const std_msgs::msg::Float64Mu
         //constexpr float MAX_YAWSPEED = 20; // deg/s
 
         Velocity velocity {
-            vx, // forward m/s
-            vy, //right m/s
+            vy, // forward m/s
+            -vx, //right m/s
             vz, //down m/s
             -wz // yawspeed deg/s
         };
@@ -164,7 +164,8 @@ void SuavePathPlanner::start() {
 
         if (buffer == "takeoff")
         {
-            try_offboard(m_drone->set_relative_position_ned(0, 0, -1.75));
+            //try_offboard(m_drone->set_relative_position_ned(0, 0, -1.75));
+            try_offboard(m_drone->set_relative_position_ned(0, 0, -20));
             start_telemetry_publishing();
         }
         if (buffer == "start")
@@ -176,7 +177,6 @@ void SuavePathPlanner::start() {
             //Forward
 
         }
-        
         if (buffer == "pause")
         {
             try_offboard(m_drone->offboard_hold());
