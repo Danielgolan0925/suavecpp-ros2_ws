@@ -182,6 +182,23 @@ void SuavePathPlanner::start() {
             try_offboard(m_drone->offboard_hold());
             stop_telemetry_publishing();
         }
+        if (buffer == "rtab"){
+            suave_log << "Exporting RTAB-Map database......." << std::endl;
+
+            // Modify the database path and output directory as needed
+            std::string database_path = "~/.ros/rtabmap.db";
+            std::string output_dir = "~/rtab_files";
+            std::string export_command = "rtabmap-export --output $(date +cloud%Y-%m-%d_%H-%M-%S) --output_dir ~/rtab_files ~/.ros/rtabmap.db";
+            int result = std::system(export_command.c_str());
+            if (result == 0)
+            {
+                suave_log << "RTAB-Map export completed successfully." << std::endl;
+            }
+            else
+            {
+                suave_log << "Error exporting RTAB-Map data." << std::endl;
+            }
+        }
         if (buffer == "exit")
         {
             stop_telemetry_publishing();
