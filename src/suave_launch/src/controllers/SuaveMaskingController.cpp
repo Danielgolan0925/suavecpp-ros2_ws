@@ -9,6 +9,8 @@
 #include "../vio/CloudExporter.h"
 #include "../vio/VIOBridge.h"
 #include "ControllerMacros.h"
+#include <thread>
+#include <chrono>
 
 void SuaveMaskingController::start() {
     // Create realsense and rtabmap nodes
@@ -101,6 +103,17 @@ void SuaveMaskingController::start() {
     try_offboard(m_drone->offboard_setpoint())
     try_offboard(m_drone->offboard().start())
 
+    // Start a thread for publishing velocity
+    std::thread velocity_publisher_thread([this]() {
+        while (!m_end_controller) { 
+            m_drone->publish_velocity();
+            std::this_thread::sleep_for(std::chrono::milliseconds(100)); 
+        }
+    });
+
+    // Detach the thread so it runs independently
+    velocity_publisher_thread.detach();
+
     while (true) 
     {
         suave_log << "Input action: ";
@@ -162,6 +175,10 @@ void SuaveMaskingController::start() {
 
 void SuaveMaskingController::shutdown() {
     suave_log << "SuaveMaskingController::shutdown()" << std::endl;
+
+    // Signal the velocity publisher thread to stop
+    m_end_controller = true;
+
     if (m_masking_subscriber)
     {
         m_masking_subscriber->disable();

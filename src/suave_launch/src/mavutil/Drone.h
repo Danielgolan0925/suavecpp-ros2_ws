@@ -62,6 +62,7 @@ public:
 
     std::string get_quaternion_string() const;
     std::string get_ned_position_string() const;
+    std::string get_velocity_string() const;
 
     Offboard::Result offboard_setpoint();
 
@@ -82,6 +83,7 @@ public:
     void set_heading_callback(TelemetryProperty<Telemetry::Heading>::TCallback callback);
     void init_ros_publisher();
     void publish_telemetry();
+    void publish_velocity(); 
 
 private:
     // Mavsdk
@@ -113,6 +115,7 @@ private:
     rclcpp::Node::SharedPtr m_ros_node;
     rclcpp::Publisher<geometry_msgs::msg::Quaternion>::SharedPtr m_quaternion_publisher;
     rclcpp::Publisher<geometry_msgs::msg::Vector3>::SharedPtr m_ned_position_publisher;
+    rclcpp::Publisher<geometry_msgs::msg::Vector3>::SharedPtr m_velocity_publisher; // Add this member
 };
 
 #endif //DRONE_H

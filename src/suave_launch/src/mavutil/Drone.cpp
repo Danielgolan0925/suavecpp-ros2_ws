@@ -15,9 +15,10 @@ Drone::Drone(std::shared_ptr<System> system): m_system(std::move(system))
 }
 
 void Drone::init_ros_publisher() {
-    m_ros_node = std::make_shared<rclcpp::Node>("drone_telemetry_publisher");
+    m_ros_node = rclcpp::Node::make_shared("drone_node");
     m_quaternion_publisher = m_ros_node->create_publisher<geometry_msgs::msg::Quaternion>("drone/quaternion", 10);
     m_ned_position_publisher = m_ros_node->create_publisher<geometry_msgs::msg::Vector3>("drone/ned_position", 10);
+    m_velocity_publisher = m_ros_node->create_publisher<geometry_msgs::msg::Vector3>("drone/velocity", 10); // Ensure this line exists
     RCLCPP_INFO(m_ros_node->get_logger(), "ROS publishers initialized.");
 }
 
@@ -48,11 +49,25 @@ void Drone::publish_telemetry() {
     //RCLCPP_INFO(m_ros_node->get_logger(), "Published NED Position: [north: %f, east: %f, down: %f]", ned_position_msg.x, ned_position_msg.y, ned_position_msg.z);
 }
 
+void Drone::publish_velocity() {
+    if (!m_ros_node) {
+        suave_err << "ROS node not initialized. Call init_ros_publisher() first." << std::endl;
+        return;
+    }
+
+    auto velocity = m_position_velocity_ned.get().unwrap().velocity;
+    geometry_msgs::msg::Vector3 velocity_msg;
+    velocity_msg.x = velocity.north_m_s;
+    velocity_msg.y = velocity.east_m_s;
+    velocity_msg.z = velocity.down_m_s;
+    m_velocity_publisher->publish(velocity_msg);
+}
+
 std::string Drone::get_quaternion_string() const
 {
     auto quaternion = get_quaternion();
     std::stringstream ss;
-    ss << "Quaternion- w: " << quaternion.w << ", x: " << quaternion.x << ", y: " << quaternion.y << ", z: " << quaternion.z;
+    ss << "Quaternion- w: " << quaternion.w << ", x: " << quaternion.x << ", y: " << quaternion.z;
     return ss.str();
 }
 
@@ -63,6 +78,13 @@ std::string Drone::get_ned_position_string() const
     std::stringstream ss;
     ss << "NED Position- North: " << position.north_m << ", East: " << position.east_m << ", Down: " << position.down_m;
     return ss.str();
+}
+
+std::string Drone::get_velocity_string() const {
+    auto velocity = m_position_velocity_ned.get().unwrap().velocity;
+    std::ostringstream oss;
+    oss << "Velocity: [" << velocity.north_m_s << ", " << velocity.east_m_s << ", " << velocity.down_m_s << "]";
+    return oss.str();
 }
 
 Offboard::Result Drone::offboard_setpoint()
@@ -160,3 +182,5 @@ void Drone::set_heading_callback(TelemetryProperty<Telemetry::Heading>::TCallbac
 {
     m_heading.set_callback(callback);
 }
+
+rclcpp::Publisher<geometry_msgs::msg::Vector3>::SharedPtr m_velocity_publisher;
