@@ -130,6 +130,28 @@ void SuaveMaskingController::start() {
             masking_spinner->start_in_thread();
             masking_pid_task->start_in_thread();
         }
+        if (buffer == "rtab"){
+            suave_log << "Exporting RTAB-Map database......." << std::endl;
+
+            // Modify the database path and output directory as needed
+            std::string database_path = "~/.ros/rtabmap.db";
+            std::string output_dir = "~/rtab_files";
+
+            //std::string export_command = "rtabmap-export --output my_cloud --output_dir "+ output_dir +" "+database_path;
+            //std::string export_command = "rtabmap-export --output " + filename.str() + " --output_dir ~/rtab_files ~/.ros/rtabmap.db";
+            std::string export_command = "rtabmap-export --output $(date +cloud%Y-%m-%d_%H-%M-%S) --output_dir ~/rtab_files ~/.ros/rtabmap.db";
+
+            int result = std::system(export_command.c_str());
+
+            if (result == 0)
+            {
+                suave_log << "RTAB-Map export completed successfully." << std::endl;
+            }
+            else
+            {
+                suave_log << "Error exporting RTAB-Map data." << std::endl;
+            }
+        }
         if (buffer == "stop")
         {
             m_masking_subscriber->disable();
