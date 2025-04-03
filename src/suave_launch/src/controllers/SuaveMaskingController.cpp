@@ -128,7 +128,11 @@ void SuaveMaskingController::start() {
         {
             m_masking_subscriber->enable();
             masking_spinner->start_in_thread();
-            masking_pid_task->start_in_thread();
+            if (masking_pid_task->start_in_thread() == nullptr) {
+                suave_err << "Failed to start masking_pid_publisher task." << std::endl;
+            } else {
+                suave_log << "masking_pid_publisher task started successfully." << std::endl;
+            }
         }
         if (buffer == "rtab"){
             suave_log << "Exporting RTAB-Map database......." << std::endl;
