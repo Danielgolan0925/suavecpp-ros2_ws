@@ -52,3 +52,14 @@ ros
 ros2 param set /camera/camera depth_module.emitter_enabled 0
 ros2 launch ~/Dev/suavecpp-ros2_ws/launch/suave_slam.py
 ```
+
+## Updating FTDI Adaptor board
+If you have issues with communication between the pixhawk and your companion computer, you may need to swap your FTDI board. Once you have switched it, run the command in your terminal below to see what the identifier for the new board is: 
+```
+ls /dev/serial/by-id/
+```
+That will list all the devices plugged in over usb by serial ID. Then update your bashrc with the command (Don't forget to update the new FTDI ID): 
+```
+echo 'export SUAVE_MAVLINK_SERIAL_ID=usb-FTDI_FT232R_USB_UART_<NEW_FTDI_IDENTIFIER>-if00-port0' >> ~/.bashrc
+source ~/.bashrc
+```
