@@ -9,8 +9,6 @@
 #include "../vio/CloudExporter.h"
 #include "../vio/VIOBridge.h"
 #include "ControllerMacros.h"
-#include <thread>
-#include <chrono>
 
 void SuaveMaskingController::start() {
     // Create realsense and rtabmap nodes
@@ -32,7 +30,6 @@ void SuaveMaskingController::start() {
     );
     m_task.push_back(rtabmap_task);
 
-    // The block below to enables CPU logging
     auto cpu_logger = std::make_shared<SystemTask>(
         std::vector<std::string>{
             "source /opt/ros/humble/setup.bash",
@@ -103,17 +100,6 @@ void SuaveMaskingController::start() {
     try_offboard(m_drone->offboard_setpoint())
     try_offboard(m_drone->offboard().start())
 
-    // Start a thread for publishing velocity
-    std::thread velocity_publisher_thread([this]() {
-        while (!m_end_controller) { 
-            m_drone->publish_velocity();
-            std::this_thread::sleep_for(std::chrono::milliseconds(100)); 
-        }
-    });
-
-    // Detach the thread so it runs independently
-    velocity_publisher_thread.detach();
-
     while (true) 
     {
         suave_log << "Input action: ";
@@ -128,11 +114,14 @@ void SuaveMaskingController::start() {
         {
             m_masking_subscriber->enable();
             masking_spinner->start_in_thread();
-            if (masking_pid_task->start_in_thread() == nullptr) {
-                suave_err << "Failed to start masking_pid_publisher task." << std::endl;
-            } else {
-                suave_log << "masking_pid_publisher task started successfully." << std::endl;
-            }
+            masking_pid_task->start_in_thread();
+        }
+        if (buffer == "stop")
+        {
+            m_masking_subscriber->disable();
+            masking_pid_task->stop();
+            masking_spinner->stop();
+            try_offboard(m_drone->offboard_hold())
         }
         if (buffer == "rtab"){
             suave_log << "Exporting RTAB-Map database......." << std::endl;
@@ -143,9 +132,9 @@ void SuaveMaskingController::start() {
 
             //std::string export_command = "rtabmap-export --output my_cloud --output_dir "+ output_dir +" "+database_path;
             //std::string export_command = "rtabmap-export --output " + filename.str() + " --output_dir ~/rtab_files ~/.ros/rtabmap.db";
-            std::string export_command = "rtabmap-export --output $(date +cloud%Y-%m-%d_%H-%M-%S) --output_dir ~/rtab_files ~/.ros/rtabmap.db";
+            std::string exportcommand = "rtabmap-export --output $(date +cloud%Y-%m-%d_%H-%M-%S) --output_dir ~/rtab_files ~/.ros/rtabmap.db && rtabmap-export --decimation --noisefiltering --output $(date +cloud%Y-%m-%d_%H-%M-%S_big) --output_dir ~/rtab_files ~/.ros/rtabmap.db";
 
-            int result = std::system(export_command.c_str());
+            int result = std::system(exportcommand.c_str());
 
             if (result == 0)
             {
@@ -155,13 +144,6 @@ void SuaveMaskingController::start() {
             {
                 suave_log << "Error exporting RTAB-Map data." << std::endl;
             }
-        }
-        if (buffer == "stop")
-        {
-            m_masking_subscriber->disable();
-            masking_pid_task->stop();
-            masking_spinner->stop();
-            try_offboard(m_drone->offboard_hold())
         }
         if (buffer == "maskon")
         {
@@ -177,9 +159,7 @@ void SuaveMaskingController::start() {
         }
         if (buffer == "export")
         {
-            // export_task.start_in_thread();
-            suave_log << "Exporting CPU Data" << std::endl;
-            system("ros2 service call /exportCPU std_srvs/srv/Empty");
+            export_task.start_in_thread();
         }
 
         suave_log << std::endl;
@@ -201,10 +181,6 @@ void SuaveMaskingController::start() {
 
 void SuaveMaskingController::shutdown() {
     suave_log << "SuaveMaskingController::shutdown()" << std::endl;
-
-    // Signal the velocity publisher thread to stop
-    m_end_controller = true;
-
     if (m_masking_subscriber)
     {
         m_masking_subscriber->disable();
