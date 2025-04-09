@@ -109,7 +109,7 @@ void SuavePathPlanner::start() {
             sleep(1);
             // try_offboard(m_drone->set_local_position_ned(20, 0, 0))
             //Forward
-            double d = 1; // distance
+            double d = 10; // distance
             for (double i = 0; i < d; i += .25) {
                 try_offboard(m_drone->set_local_position_ned(i, 0, 0));
                 for (int j = 0; j < 4; ++j) { 
@@ -121,6 +121,47 @@ void SuavePathPlanner::start() {
                     std::this_thread::sleep_for(std::chrono::milliseconds(250)); 
                 }
             }
+            '''
+            //Right
+            double b = 5; // distance
+            for (double i = 0; i < b; i += .25) {
+                try_offboard(m_drone->set_local_position_ned(d, i, 0));
+                for (int j = 0; j < 4; ++j) { 
+                    std::string quaternion_str = m_drone->get_quaternion_string();
+                    std::string ned_position_str = m_drone->get_ned_position_string();
+                    std::string velocity_str = m_drone->get_velocity_string(); // Retrieve velocity string
+                    suave_log << quaternion_str << " | " << ned_position_str << " | " << velocity_str << "\n"; // Print velocity
+                    m_drone->publish_velocity(); // Publish velocity to ROS
+                    std::this_thread::sleep_for(std::chrono::milliseconds(250)); 
+                }
+            }
+
+            //Backward
+            for (double i = 0; i < d; i += .25) {
+                try_offboard(m_drone->set_local_position_ned(d-i, b, 0));
+                for (int j = 0; j < 4; ++j) { 
+                    std::string quaternion_str = m_drone->get_quaternion_string();
+                    std::string ned_position_str = m_drone->get_ned_position_string();
+                    std::string velocity_str = m_drone->get_velocity_string(); // Retrieve velocity string
+                    suave_log << quaternion_str << " | " << ned_position_str << " | " << velocity_str << "\n"; // Print velocity
+                    m_drone->publish_velocity(); // Publish velocity to ROS
+                    std::this_thread::sleep_for(std::chrono::milliseconds(250)); 
+                }
+            }
+
+            //Right
+            for (double i = 0; i < b; i += .25) {
+                try_offboard(m_drone->set_local_position_ned(0, i, 0));
+                for (int j = 0; j < 4; ++j) { 
+                    std::string quaternion_str = m_drone->get_quaternion_string();
+                    std::string ned_position_str = m_drone->get_ned_position_string();
+                    std::string velocity_str = m_drone->get_velocity_string(); // Retrieve velocity string
+                    suave_log << quaternion_str << " | " << ned_position_str << " | " << velocity_str << "\n"; // Print velocity
+                    m_drone->publish_velocity(); // Publish velocity to ROS
+                    std::this_thread::sleep_for(std::chrono::milliseconds(250)); 
+                }
+            }
+            '''
         }
         if (buffer == "rtab"){
             suave_log << "Exporting RTAB-Map database......." << std::endl;
