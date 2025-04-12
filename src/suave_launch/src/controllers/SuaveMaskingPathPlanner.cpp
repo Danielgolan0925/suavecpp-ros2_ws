@@ -109,11 +109,11 @@ void SuavePathPlanner::start() {
             sleep(1);
             // try_offboard(m_drone->set_local_position_ned(20, 0, 0))
             // Forward
-            double d = 10; // distance
+            double d = 5; // distance
             //double a = 0.5;
             //double n = 0.25;
-            double b = 5; // distance
-            for (double i = 0; i < d; i += 1) {
+            double b = 2; // distance
+            for (double i = 0; i < d; i += 0.25) {
                 try_offboard(m_drone->set_local_position_ned(i, 0, 0));
                 for (int j = 0; j < 4; ++j) { 
                     std::string quaternion_str = m_drone->get_quaternion_string();
@@ -126,7 +126,7 @@ void SuavePathPlanner::start() {
             }
             
             // Right
-            for (double i = 0; i < b; i += 1) {
+            for (double i = 0; i < b; i += 0.25) {
                 try_offboard(m_drone->set_local_position_ned(d, i, 0));
                 for (int j = 0; j < 4; ++j) { 
                     std::string quaternion_str = m_drone->get_quaternion_string();
@@ -139,7 +139,7 @@ void SuavePathPlanner::start() {
             }
 
             // Backward
-            for (double i = 0; i < d; i += 1) {
+            for (double i = 0; i < d; i += 0.25) {
                 try_offboard(m_drone->set_local_position_ned(d-i, b, 0));
                 for (int j = 0; j < 4; ++j) { 
                     std::string quaternion_str = m_drone->get_quaternion_string();
@@ -152,7 +152,7 @@ void SuavePathPlanner::start() {
             }
 
             // Right
-            for (double i = 0; i < b; i += 1) {
+            for (double i = 0; i < b; i += 0.25) {
                 try_offboard(m_drone->set_local_position_ned(0, b+i, 0));
                 for (int j = 0; j < 4; ++j) { 
                     std::string quaternion_str = m_drone->get_quaternion_string();
@@ -165,7 +165,7 @@ void SuavePathPlanner::start() {
             }
 
             // Forward
-            for (double i = 0; i < d; i += 1) {
+            for (double i = 0; i < d; i += 0.25) {
                 try_offboard(m_drone->set_local_position_ned(i, 2*b, 0));
                 for (int j = 0; j < 4; ++j) { 
                     std::string quaternion_str = m_drone->get_quaternion_string();
