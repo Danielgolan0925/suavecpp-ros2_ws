@@ -29,15 +29,21 @@ source ./install/setup.bash
 ```
 
 ## To run
-Launch PX4 SITL
+If you want to run it through Gazebo, launch PX4 SITL in its own terminal
 ```
 cd PX4-Autopilot
 make px4_sitl gz_x500
 ```
-Launch suave_main
+Then in a separate terminal run
 ```
+ros
+cd ~/Dev/suavecpp-ros2_ws
+colcon build
+source ./install/setup.bash
 ros2 run suave_launch suave_main
 ```
+If you are running this on the actual drone just copy in the commands above one by one. You only need to source a terminal one time and build after a change to anything in cpp. 
+
 As a note, if you are running it on the actual drone, make sure that it is in manual mode otherwise it will not be able to switch to offboard mode. 
 
 ## Running RTAB with IR
