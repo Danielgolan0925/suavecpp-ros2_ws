@@ -39,7 +39,7 @@ YAWGAINS = [6, 0, 0]
 XGAINS = [1, 1.25, 3]
 YGAINS = [1, 0, 0]
 ZGAINS = [7.5, 0, 0]
-YAWGAINS = [6, 0, 0]
+YAWGAINS = [6, 2, 3]
 
 
 class MaskingPIDPublisher(Node):

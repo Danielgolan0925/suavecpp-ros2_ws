@@ -42,7 +42,7 @@ void MaskingSubscriber::callback(const QuaternionMsg::SharedPtr msg) {
             MAX_VELOCITY * -x, // forward m/s
             MAX_VELOCITY * -z, // right m/s
             MAX_VELOCITY * -y, // down m/s
-            MAX_YAWSPEED * w  // yawspeed deg/s
+            MAX_YAWSPEED * w * 0 // yawspeed deg/s
         };
 
         if (m_prevVelocity && std::abs(velocity.forward_m_s - m_prevVelocity->forward_m_s) > MAX_DELTA_VELOCITY)
