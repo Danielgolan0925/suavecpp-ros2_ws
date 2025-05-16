@@ -102,17 +102,19 @@ void SuavePathPlanner::start() {
         {
             try_offboard(m_drone->set_relative_position_ned(0, 0, -1.75));
             start_telemetry_publishing();
-        }
-        if (buffer == "start")
+        }if (buffer == "start")
         {
             m_drone->set_local_position_setpoint();
             sleep(1);
             // try_offboard(m_drone->set_local_position_ned(20, 0, 0))
             // Forward
-            double d = 5; // distance
+            double d = 25; // distance
             //double a = 0.5;
             //double n = 0.25;
-            double b = 2; // distance
+            double b = 4.5; // distance
+            double r = 5.5;
+            
+            // Forward
             for (double i = 0; i < d; i += 0.25) {
                 try_offboard(m_drone->set_local_position_ned(i, 0, 0));
                 for (int j = 0; j < 4; ++j) { 
@@ -125,9 +127,9 @@ void SuavePathPlanner::start() {
                 }
             }
             
-            // Right
+            // Left
             for (double i = 0; i < b; i += 0.25) {
-                try_offboard(m_drone->set_local_position_ned(d, i, 0));
+                try_offboard(m_drone->set_local_position_ned(d, -i, 0));
                 for (int j = 0; j < 4; ++j) { 
                     std::string quaternion_str = m_drone->get_quaternion_string();
                     std::string ned_position_str = m_drone->get_ned_position_string();
@@ -140,7 +142,7 @@ void SuavePathPlanner::start() {
 
             // Backward
             for (double i = 0; i < d; i += 0.25) {
-                try_offboard(m_drone->set_local_position_ned(d-i, b, 0));
+                try_offboard(m_drone->set_local_position_ned(d-i, -b, 0));
                 for (int j = 0; j < 4; ++j) { 
                     std::string quaternion_str = m_drone->get_quaternion_string();
                     std::string ned_position_str = m_drone->get_ned_position_string();
@@ -152,21 +154,8 @@ void SuavePathPlanner::start() {
             }
 
             // Right
-            for (double i = 0; i < b; i += 0.25) {
-                try_offboard(m_drone->set_local_position_ned(0, b+i, 0));
-                for (int j = 0; j < 4; ++j) { 
-                    std::string quaternion_str = m_drone->get_quaternion_string();
-                    std::string ned_position_str = m_drone->get_ned_position_string();
-                    std::string velocity_str = m_drone->get_velocity_string(); // Retrieve velocity string
-                    suave_log << quaternion_str << " | " << ned_position_str << " | " << velocity_str << "\n"; // Print velocity
-                    m_drone->publish_velocity(); // Publish velocity to ROS
-                    std::this_thread::sleep_for(std::chrono::milliseconds(250)); 
-                }
-            }
-
-            // Forward
-            for (double i = 0; i < d; i += 0.25) {
-                try_offboard(m_drone->set_local_position_ned(i, 2*b, 0));
+            for (double i = 0; i < r; i += 0.25) {
+                try_offboard(m_drone->set_local_position_ned(0, -b+i, 0));
                 for (int j = 0; j < 4; ++j) { 
                     std::string quaternion_str = m_drone->get_quaternion_string();
                     std::string ned_position_str = m_drone->get_ned_position_string();
@@ -228,26 +217,26 @@ void SuavePathPlanner::start() {
 void SuavePathPlanner::shutdown() {
     suave_log << "SuavePathPlanner::shutdown()" << std::endl;
     
-    // suave_log << "Exporting RTAB-Map database due to Ctrl C......." << std::endl;
+    suave_log << "Exporting RTAB-Map database due to Ctrl C......." << std::endl;
 
-    //         // Modify the database path and output directory as needed
-    //         std::string database_path = "~/.ros/rtabmap.db";
-    //         std::string output_dir = "~/rtab_files";
+            // Modify the database path and output directory as needed
+            std::string database_path = "~/.ros/rtabmap.db";
+            std::string output_dir = "~/rtab_files";
 
-    //         //std::string export_command = "rtabmap-export --output my_cloud --output_dir "+ output_dir +" "+database_path;
-    //         //std::string export_command = "rtabmap-export --output " + filename.str() + " --output_dir ~/rtabfiles ~/.ros/rtabmap.db";
-    //         std::string exportcommand = "rtabmap-export --output $(date +cloud%Y-%m-%d%H-%M-%S) --output_dir ~/rtab_files ~/.ros/rtabmap.db";
+            //std::string export_command = "rtabmap-export --output my_cloud --output_dir "+ output_dir +" "+database_path;
+            //std::string export_command = "rtabmap-export --output " + filename.str() + " --output_dir ~/rtabfiles ~/.ros/rtabmap.db";
+            std::string exportcommand = "rtabmap-export --output $(date +cloud%Y-%m-%d%H-%M-%S) --output_dir ~/rtab_files ~/.ros/rtabmap.db";
 
-    //         int result = std::system(exportcommand.c_str());
+            int result = std::system(exportcommand.c_str());
 
-    //         if (result == 0)
-    //         {
-    //             suave_log << "RTAB-Map export completed successfully." << std::endl;
-    //         }
-    //         else
-    //         {
-    //             suave_log << "Error exporting RTAB-Map data." << std::endl;
-    //         }
+            if (result == 0)
+            {
+                suave_log << "RTAB-Map export completed successfully." << std::endl;
+            }
+            else
+            {
+                suave_log << "Error exporting RTAB-Map data." << std::endl;
+            }
         
     m_drone->offboard_wait_for_land();
     
