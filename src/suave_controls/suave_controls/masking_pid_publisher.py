@@ -12,8 +12,11 @@ import subprocess
 
 pink_lower = np.array([140, 100, 100])
 pink_upper = np.array([170, 255, 255])
-purple_lower = np.array([110, 50, 50])
-purple_upper = np.array([150, 255, 200])
+# purple_lower = np.array([110, 50, 50])
+# purple_upper = np.array([150, 255, 200])
+
+purple_lower = np.array([120, 50, 50])
+purple_upper = np.array([150, 255, 255])
 
 """
 XGAINS = [1, 0, 0]
