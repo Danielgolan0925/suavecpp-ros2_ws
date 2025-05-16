@@ -8,7 +8,7 @@
 #include "controllers/SuaveMaskingPathPlanner.h"
 #include "mavutil/Drone.h"
 
-SuavePathPlanner s_controller{};
+SuaveMaskingController s_controller{};
 
 void signal_handler(int sig)
 {
