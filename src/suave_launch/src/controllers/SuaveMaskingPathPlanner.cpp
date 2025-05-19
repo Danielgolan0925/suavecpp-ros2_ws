@@ -217,6 +217,7 @@ void SuavePathPlanner::start() {
 void SuavePathPlanner::shutdown() {
     suave_log << "SuavePathPlanner::shutdown()" << std::endl;
     
+    // Comment all the RTAB stuff below to not export a map for every flight
     suave_log << "Exporting RTAB-Map database due to Ctrl C......." << std::endl;
 
             // Modify the database path and output directory as needed
