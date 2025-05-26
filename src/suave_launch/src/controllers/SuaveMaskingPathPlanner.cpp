@@ -164,8 +164,8 @@ void SuavePathPlanner::start() {
 
         if (buffer == "takeoff")
         {
-            //try_offboard(m_drone->set_relative_position_ned(0, 0, -1.75));
-            try_offboard(m_drone->set_relative_position_ned(0, 0, -20));
+            try_offboard(m_drone->set_relative_position_ned(0, 0, -1.75));
+            //try_offboard(m_drone->set_relative_position_ned(0, 0, -20));
             start_telemetry_publishing();
         }
         if (buffer == "start")

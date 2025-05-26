@@ -50,16 +50,17 @@ class DualQuaternionController(Node):
                 PyQuaternion(dq_current_df.iloc[0]['dual_w'], dq_current_df.iloc[0]['dual_x'], 
                              dq_current_df.iloc[0]['dual_y'], dq_current_df.iloc[0]['dual_z']))
             
-            if not hasattr(self, 'desired_switch_start_time'):
-                self.desired_switch_start_time = time.time()
-            elapsed_time = time.time() - self.desired_switch_start_time
+            # if not hasattr(self, 'desired_switch_start_time'):
+            #     self.desired_switch_start_time = time.time()
+            # elapsed_time = time.time() - self.desired_switch_start_time
             
             # Switch between desired values based on elapsed time
-            if elapsed_time < 3:  # Use x_des1, y_des1, z_des1 for the first 10 seconds
-                x_des, y_des, z_des = 0.5 * -3, 0.5 * 0, 0.5 * -20
-            else:  # Switch to x_des2, y_des2, z_des2 after 10 seconds
-                x_des, y_des, z_des = 0.5 * -6, 0.5 * 0, 0.5 * -20
+            # if elapsed_time < 3:  # Use x_des1, y_des1, z_des1 for the first 10 seconds
+            #     x_des, y_des, z_des = 0.5 * -2, 0.5 * 0, 0.5 * -1.75
+            # else:  # Switch to x_des2, y_des2, z_des2 after 10 seconds
+            #     x_des, y_des, z_des = 0.5 * -4, 0.5 * 0, 0.5 * -1.75
             
+            x_des, y_des, z_des = 0.5 * -2, 0.5 * 0, 0.5 * -1.75
             dq_desired = DualQuaternion(
                 PyQuaternion(1, 0, 0 , 0),
                 PyQuaternion(0, y_des, x_des, z_des))
